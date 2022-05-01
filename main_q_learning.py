@@ -3,11 +3,15 @@ import time
 import operator
 import numpy as np
 from collections import defaultdict
-
-
+import matplotlib
+import matplotlib.style
+import itertools
 from game_q_learning import CarGameQL
 from macros import *
+import plotting
 
+
+matplotlib.style.use('ggplot')
 
 # Are we rendering or not
 RENDER_TRAIN = False
@@ -86,6 +90,10 @@ def choose_action_e_greedy(state, q_table):
 
 def main():
 
+    stats = plotting.EpisodeStats(
+        episode_lengths=np.zeros(NUM_EPISODES),
+        episode_rewards=np.zeros(NUM_EPISODES))
+
     #  "Loop for each episode:"
     for e in range(NUM_EPISODES):
         #  "Initialize S"
@@ -93,6 +101,7 @@ def main():
 
         #  "Loop for each step of episode:"
         episode_steps = 0
+        t = 0
         while (episode_steps < MAX_STEPS_PER_EPISODE):
             #
             #  "Choose A from S using policy derived from Q (e.g., e-greedy)"
@@ -105,6 +114,9 @@ def main():
             #
             #  "Q(S,A) <-- Q(S,A) + alpha*[R + gamma* maxa(Q(S', a)) - Q(S, A)]"
             #
+
+            stats.episode_rewards[e] += reward
+            stats.episode_lengths[e] = t
             try:
                 best_next_action = max(
                     q_table[s1].items(), key=operator.itemgetter(1))[0]
@@ -118,7 +130,7 @@ def main():
             q_table[s0][action] += LEARNING_RATE * td_delta
             #  "S <-- S'"
             s0 = s1
-
+            t += 1
             # until S is terminal
             if (done):
                 break
@@ -128,6 +140,8 @@ def main():
             print("episode {} completed".format(e))
 
     #  test our trained agent
+
+    plotting.plot_episode_stats(stats)
     test_agent(q_table)
 
 
